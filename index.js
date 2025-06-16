@@ -8,21 +8,28 @@ require("dotenv").config();
 const app = express();
 const port = process.env.PORT || 5000;
 
-// ✅ Allowlist for CORS
+// ✅ Allowed frontend domains
 const allowedOrigins = [
   "http://localhost:5173",
   "https://swiftcarz-client.vercel.app",
 ];
 
-// ✅ Middleware
+// ✅ Corrected CORS Setup
 app.use(cors({
-  origin: allowedOrigins,
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("CORS not allowed from this origin: " + origin));
+    }
+  },
   credentials: true,
 }));
+
 app.use(express.json());
 app.use(cookieParser());
 
-// ✅ MongoDB setup
+// ✅ MongoDB Connection
 const uri = process.env.MONGODB_URI;
 let carCollection, bookingCollection;
 
@@ -47,7 +54,7 @@ async function run() {
 }
 run().catch(console.dir);
 
-// ✅ JWT Verification Middleware
+// ✅ JWT Middleware
 function verifyToken(req, res, next) {
   const token = req.cookies?.token;
   if (!token) return res.status(401).send({ error: "Unauthorized access" });
@@ -64,7 +71,7 @@ app.get("/", (req, res) => {
   res.send("🚗 SwiftCarz backend is running!");
 });
 
-// 🔐 Login - set secure cookie
+// 🔐 Login route
 app.post("/api/auth/login", (req, res) => {
   const user = req.body;
   if (!user?.email) return res.status(400).send({ error: "Invalid payload" });
@@ -81,7 +88,7 @@ app.post("/api/auth/login", (req, res) => {
     .send({ success: true });
 });
 
-// 🔓 Logout - clear cookie
+// 🔓 Logout route
 app.post("/api/auth/logout", (req, res) => {
   res
     .clearCookie("token", {
@@ -92,7 +99,7 @@ app.post("/api/auth/logout", (req, res) => {
     .send({ success: true });
 });
 
-// 🚗 Add New Car (Private)
+// 🚗 Add New Car
 app.post("/api/cars", verifyToken, async (req, res) => {
   try {
     const car = {
@@ -108,7 +115,7 @@ app.post("/api/cars", verifyToken, async (req, res) => {
   }
 });
 
-// 🚗 Get All Cars (Public)
+// 🚗 Get All Cars
 app.get("/api/cars", async (req, res) => {
   try {
     const cars = await carCollection.find().toArray();
@@ -130,7 +137,7 @@ app.get("/api/cars/:id", async (req, res) => {
   }
 });
 
-// 🚗 Update Car (Private)
+// 🚗 Update Car
 app.put("/api/cars/:id", verifyToken, async (req, res) => {
   try {
     const id = req.params.id;
@@ -145,7 +152,7 @@ app.put("/api/cars/:id", verifyToken, async (req, res) => {
   }
 });
 
-// 🚗 Delete Car (Private)
+// 🚗 Delete Car
 app.delete("/api/cars/:id", verifyToken, async (req, res) => {
   try {
     const id = req.params.id;
@@ -156,13 +163,12 @@ app.delete("/api/cars/:id", verifyToken, async (req, res) => {
   }
 });
 
-// 📅 Book Car (Private)
+// 📅 Book a Car
 app.post("/api/bookings", verifyToken, async (req, res) => {
   try {
     const booking = req.body;
     const result = await bookingCollection.insertOne(booking);
 
-    // Increment booking count
     await carCollection.updateOne(
       { _id: new ObjectId(booking.carId) },
       { $inc: { bookingCount: 1 } }
@@ -174,7 +180,7 @@ app.post("/api/bookings", verifyToken, async (req, res) => {
   }
 });
 
-// 📅 Get User's Bookings (Private)
+// 📅 Get My Bookings
 app.get("/api/bookings/my", verifyToken, async (req, res) => {
   try {
     const email = req.query.email;
@@ -189,7 +195,7 @@ app.get("/api/bookings/my", verifyToken, async (req, res) => {
   }
 });
 
-// 🚀 Start server
+// ✅ Start Server
 app.listen(port, () => {
   console.log(`🚀 Server running on port ${port}`);
 });
