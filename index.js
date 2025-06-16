@@ -90,8 +90,8 @@ app.post("/api/auth/login", (req, res) => {
   res
     .cookie("token", token, {
       httpOnly: true,
-      secure: true,
-      sameSite: "none",
+      secure: false,        // 🔧 for localhost only (change to true on deploy)
+      sameSite: "lax",      // 🔧 for localhost only (change to 'none' on deploy)
       maxAge: 2 * 60 * 60 * 1000,
     })
     .send({ success: true });
@@ -102,8 +102,8 @@ app.post("/api/auth/logout", (req, res) => {
   res
     .clearCookie("token", {
       httpOnly: true,
-      secure: true,
-      sameSite: "none",
+      secure: false,        // match login cookie
+      sameSite: "lax",
     })
     .send({ success: true });
 });
