@@ -14,7 +14,7 @@ const allowedOrigins = [
   "https://swiftcarz-client.vercel.app",
 ];
 
-// ✅ Fixed CORS Middleware
+// ✅ CORS Middleware
 app.use(
   cors({
     origin: function (origin, callback) {
@@ -28,12 +28,18 @@ app.use(
   })
 );
 
-// ✅ JSON and Cookie Parsers
+// ✅ JSON + Cookie Middleware
 app.use(express.json());
 app.use(cookieParser());
 
-// ✅ MongoDB Config
+// ✅ MongoDB Setup
 const uri = process.env.MONGODB_URI;
+
+if (!uri) {
+  console.error("❌ MONGODB_URI not set in environment variables.");
+  process.exit(1);
+}
+
 let carCollection, bookingCollection;
 
 const client = new MongoClient(uri, {
@@ -69,12 +75,12 @@ function verifyToken(req, res, next) {
   });
 }
 
-// ✅ Health check
+// ✅ Health Check
 app.get("/", (req, res) => {
   res.send("🚗 SwiftCarz backend is running!");
 });
 
-// 🔐 Login - set secure cookie
+// 🔐 Login (sets cookie)
 app.post("/api/auth/login", (req, res) => {
   const user = req.body;
   if (!user?.email) return res.status(400).send({ error: "Invalid payload" });
@@ -113,6 +119,7 @@ app.post("/api/cars", verifyToken, async (req, res) => {
     const result = await carCollection.insertOne(car);
     res.status(201).send(result);
   } catch (err) {
+    console.error("❌ Add Car Error:", err.message);
     res.status(500).send({ error: "Failed to add car" });
   }
 });
@@ -123,6 +130,7 @@ app.get("/api/cars", async (req, res) => {
     const cars = await carCollection.find().toArray();
     res.send(cars);
   } catch (err) {
+    console.error("❌ Get Cars Error:", err.message);
     res.status(500).send({ error: "Failed to fetch cars" });
   }
 });
@@ -199,7 +207,7 @@ app.get("/api/bookings/my", verifyToken, async (req, res) => {
   }
 });
 
-// ✅ Start the server
+// ✅ Start Server
 app.listen(port, () => {
-  console.log(`🚀 Server running on port ${port}`);
+  console.log(`🚀 SwiftCarz server running on port ${port}`);
 });
