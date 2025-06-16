@@ -8,27 +8,15 @@ require("dotenv").config();
 const app = express();
 const port = process.env.PORT || 5000;
 
-// ✅ Allowed frontend domains
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://swiftcarz-client.vercel.app",
-];
-
-// ✅ CORS Middleware
+// ✅ CORS for local dev + production
 app.use(
   cors({
-    origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
+    origin: ["http://localhost:5173", "https://swiftcarz-client.vercel.app"],
     credentials: true,
   })
 );
 
-// ✅ JSON + Cookie Middleware
+// ✅ Middlewares
 app.use(express.json());
 app.use(cookieParser());
 
@@ -90,8 +78,8 @@ app.post("/api/auth/login", (req, res) => {
   res
     .cookie("token", token, {
       httpOnly: true,
-      secure: false,        // 🔧 for localhost only (change to true on deploy)
-      sameSite: "lax",      // 🔧 for localhost only (change to 'none' on deploy)
+      secure: false,       // ✅ for localhost
+      sameSite: "lax",     // ✅ for localhost
       maxAge: 2 * 60 * 60 * 1000,
     })
     .send({ success: true });
@@ -102,7 +90,7 @@ app.post("/api/auth/logout", (req, res) => {
   res
     .clearCookie("token", {
       httpOnly: true,
-      secure: false,        // match login cookie
+      secure: false,
       sameSite: "lax",
     })
     .send({ success: true });
@@ -124,7 +112,7 @@ app.post("/api/cars", verifyToken, async (req, res) => {
   }
 });
 
-// 🚗 Get All Cars (Public)
+// 🚗 Get All Cars
 app.get("/api/cars", async (req, res) => {
   try {
     const cars = await carCollection.find().toArray();
