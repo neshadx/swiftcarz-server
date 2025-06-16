@@ -19,7 +19,6 @@ app.use(cors({
   origin: allowedOrigins,
   credentials: true,
 }));
-
 app.use(express.json());
 app.use(cookieParser());
 
@@ -93,17 +92,23 @@ app.post("/api/auth/logout", (req, res) => {
     .send({ success: true });
 });
 
-// 🚗 Cars
+// 🚗 Add New Car (Fixed with createdAt & bookingCount)
 app.post("/api/cars", verifyToken, async (req, res) => {
   try {
-    const car = req.body;
+    const car = {
+      ...req.body,
+      createdAt: new Date(),      // ✅ Added timestamp
+      bookingCount: 0             // ✅ Default booking count
+    };
     const result = await carCollection.insertOne(car);
     res.status(201).send(result);
   } catch (err) {
+    console.error("POST /api/cars error:", err.message);
     res.status(500).send({ error: "Failed to add car" });
   }
 });
 
+// 🚗 Get All Cars
 app.get("/api/cars", async (req, res) => {
   try {
     const cars = await carCollection.find().toArray();
@@ -113,6 +118,7 @@ app.get("/api/cars", async (req, res) => {
   }
 });
 
+// 🚗 Get Car by ID
 app.get("/api/cars/:id", async (req, res) => {
   try {
     const id = req.params.id;
@@ -124,6 +130,7 @@ app.get("/api/cars/:id", async (req, res) => {
   }
 });
 
+// 🚗 Update Car
 app.put("/api/cars/:id", verifyToken, async (req, res) => {
   try {
     const id = req.params.id;
@@ -138,6 +145,7 @@ app.put("/api/cars/:id", verifyToken, async (req, res) => {
   }
 });
 
+// 🚗 Delete Car
 app.delete("/api/cars/:id", verifyToken, async (req, res) => {
   try {
     const id = req.params.id;
@@ -148,7 +156,7 @@ app.delete("/api/cars/:id", verifyToken, async (req, res) => {
   }
 });
 
-// 📅 Bookings
+// 📅 Book a Car
 app.post("/api/bookings", verifyToken, async (req, res) => {
   try {
     const booking = req.body;
@@ -165,6 +173,7 @@ app.post("/api/bookings", verifyToken, async (req, res) => {
   }
 });
 
+// 📅 Get My Bookings
 app.get("/api/bookings/my", verifyToken, async (req, res) => {
   try {
     const email = req.query.email;
@@ -179,7 +188,7 @@ app.get("/api/bookings/my", verifyToken, async (req, res) => {
   }
 });
 
-// Start
+// 🟢 Start Server
 app.listen(port, () => {
   console.log(`🚀 Server running on port ${port}`);
 });
