@@ -14,22 +14,25 @@ const allowedOrigins = [
   "https://swiftcarz-client.vercel.app",
 ];
 
-// ✅ Corrected CORS Setup
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("CORS not allowed from this origin: " + origin));
-    }
-  },
-  credentials: true,
-}));
+// ✅ Fixed CORS Middleware
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+  })
+);
 
+// ✅ JSON and Cookie Parsers
 app.use(express.json());
 app.use(cookieParser());
 
-// ✅ MongoDB Connection
+// ✅ MongoDB Config
 const uri = process.env.MONGODB_URI;
 let carCollection, bookingCollection;
 
@@ -49,7 +52,7 @@ async function run() {
     bookingCollection = db.collection("bookings");
     console.log("✅ MongoDB connected!");
   } catch (err) {
-    console.error("❌ MongoDB connection error:", err.message);
+    console.error("❌ MongoDB connection failed:", err.message);
   }
 }
 run().catch(console.dir);
@@ -71,7 +74,7 @@ app.get("/", (req, res) => {
   res.send("🚗 SwiftCarz backend is running!");
 });
 
-// 🔐 Login route
+// 🔐 Login - set secure cookie
 app.post("/api/auth/login", (req, res) => {
   const user = req.body;
   if (!user?.email) return res.status(400).send({ error: "Invalid payload" });
@@ -88,7 +91,7 @@ app.post("/api/auth/login", (req, res) => {
     .send({ success: true });
 });
 
-// 🔓 Logout route
+// 🔓 Logout
 app.post("/api/auth/logout", (req, res) => {
   res
     .clearCookie("token", {
@@ -99,7 +102,7 @@ app.post("/api/auth/logout", (req, res) => {
     .send({ success: true });
 });
 
-// 🚗 Add New Car
+// 🚗 Add Car (Protected)
 app.post("/api/cars", verifyToken, async (req, res) => {
   try {
     const car = {
@@ -110,12 +113,11 @@ app.post("/api/cars", verifyToken, async (req, res) => {
     const result = await carCollection.insertOne(car);
     res.status(201).send(result);
   } catch (err) {
-    console.error("POST /api/cars error:", err.message);
     res.status(500).send({ error: "Failed to add car" });
   }
 });
 
-// 🚗 Get All Cars
+// 🚗 Get All Cars (Public)
 app.get("/api/cars", async (req, res) => {
   try {
     const cars = await carCollection.find().toArray();
@@ -137,7 +139,7 @@ app.get("/api/cars/:id", async (req, res) => {
   }
 });
 
-// 🚗 Update Car
+// 🚗 Update Car (Protected)
 app.put("/api/cars/:id", verifyToken, async (req, res) => {
   try {
     const id = req.params.id;
@@ -152,7 +154,7 @@ app.put("/api/cars/:id", verifyToken, async (req, res) => {
   }
 });
 
-// 🚗 Delete Car
+// 🚗 Delete Car (Protected)
 app.delete("/api/cars/:id", verifyToken, async (req, res) => {
   try {
     const id = req.params.id;
@@ -163,7 +165,7 @@ app.delete("/api/cars/:id", verifyToken, async (req, res) => {
   }
 });
 
-// 📅 Book a Car
+// 📅 Book a Car (Protected)
 app.post("/api/bookings", verifyToken, async (req, res) => {
   try {
     const booking = req.body;
@@ -180,7 +182,7 @@ app.post("/api/bookings", verifyToken, async (req, res) => {
   }
 });
 
-// 📅 Get My Bookings
+// 📅 Get My Bookings (Protected)
 app.get("/api/bookings/my", verifyToken, async (req, res) => {
   try {
     const email = req.query.email;
@@ -188,14 +190,16 @@ app.get("/api/bookings/my", verifyToken, async (req, res) => {
       return res.status(403).send({ error: "Forbidden" });
     }
 
-    const bookings = await bookingCollection.find({ userEmail: email }).toArray();
+    const bookings = await bookingCollection
+      .find({ userEmail: email })
+      .toArray();
     res.send(bookings);
   } catch (err) {
     res.status(500).send({ error: "Failed to fetch bookings" });
   }
 });
 
-// ✅ Start Server
+// ✅ Start the server
 app.listen(port, () => {
   console.log(`🚀 Server running on port ${port}`);
 });
