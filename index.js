@@ -78,8 +78,8 @@ app.post("/api/auth/login", (req, res) => {
   res
     .cookie("token", token, {
       httpOnly: true,
-      secure: false,       //  for localhost
-      sameSite: "lax",     //  for localhost
+      secure: true,       //  for localhost
+      sameSite: "none",     //  for localhost
       maxAge: 2 * 60 * 60 * 1000,
     })
     .send({ success: true });
