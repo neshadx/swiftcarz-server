@@ -8,7 +8,7 @@ require("dotenv").config();
 const app = express();
 const port = process.env.PORT || 5000;
 
-// ✅ CORS for local dev + production
+// CORS for local dev + production
 app.use(
   cors({
     origin: ["http://localhost:5173", "https://swiftcarz-client.vercel.app"],
@@ -16,15 +16,15 @@ app.use(
   })
 );
 
-// ✅ Middlewares
+//  Middlewares
 app.use(express.json());
 app.use(cookieParser());
 
-// ✅ MongoDB Setup
+//  MongoDB Setup
 const uri = process.env.MONGODB_URI;
 
 if (!uri) {
-  console.error("❌ MONGODB_URI not set in environment variables.");
+  console.error(" MONGODB_URI not set in environment variables.");
   process.exit(1);
 }
 
@@ -44,14 +44,14 @@ async function run() {
     const db = client.db("swiftcarzDB");
     carCollection = db.collection("cars");
     bookingCollection = db.collection("bookings");
-    console.log("✅ MongoDB connected!");
+    console.log(" MongoDB connected!");
   } catch (err) {
     console.error("❌ MongoDB connection failed:", err.message);
   }
 }
 run().catch(console.dir);
 
-// ✅ JWT Middleware
+// JWT Middleware
 function verifyToken(req, res, next) {
   const token = req.cookies?.token;
   if (!token) return res.status(401).send({ error: "Unauthorized access" });
@@ -63,12 +63,12 @@ function verifyToken(req, res, next) {
   });
 }
 
-// ✅ Health Check
+//  Health Check
 app.get("/", (req, res) => {
   res.send("🚗 SwiftCarz backend is running!");
 });
 
-// 🔐 Login (sets cookie)
+//  Login (sets cookie)
 app.post("/api/auth/login", (req, res) => {
   const user = req.body;
   if (!user?.email) return res.status(400).send({ error: "Invalid payload" });
@@ -78,14 +78,14 @@ app.post("/api/auth/login", (req, res) => {
   res
     .cookie("token", token, {
       httpOnly: true,
-      secure: false,       // ✅ for localhost
-      sameSite: "lax",     // ✅ for localhost
+      secure: false,       //  for localhost
+      sameSite: "lax",     //  for localhost
       maxAge: 2 * 60 * 60 * 1000,
     })
     .send({ success: true });
 });
 
-// 🔓 Logout
+//  Logout
 app.post("/api/auth/logout", (req, res) => {
   res
     .clearCookie("token", {
@@ -96,7 +96,7 @@ app.post("/api/auth/logout", (req, res) => {
     .send({ success: true });
 });
 
-// 🚗 Add Car (Protected)
+//  Add Car (Protected)
 app.post("/api/cars", verifyToken, async (req, res) => {
   try {
     const car = {
@@ -112,18 +112,18 @@ app.post("/api/cars", verifyToken, async (req, res) => {
   }
 });
 
-// 🚗 Get All Cars
+//  Get All Cars
 app.get("/api/cars", async (req, res) => {
   try {
     const cars = await carCollection.find().toArray();
     res.send(cars);
   } catch (err) {
-    console.error("❌ Get Cars Error:", err.message);
+    console.error("Get Cars Error:", err.message);
     res.status(500).send({ error: "Failed to fetch cars" });
   }
 });
 
-// 🚗 Get Car by ID
+//  Get Car by ID
 app.get("/api/cars/:id", async (req, res) => {
   try {
     const id = req.params.id;
@@ -135,7 +135,7 @@ app.get("/api/cars/:id", async (req, res) => {
   }
 });
 
-// 🚗 Update Car (Protected)
+//  Update Car (Protected)
 app.put("/api/cars/:id", verifyToken, async (req, res) => {
   try {
     const id = req.params.id;
@@ -150,7 +150,7 @@ app.put("/api/cars/:id", verifyToken, async (req, res) => {
   }
 });
 
-// 🚗 Delete Car (Protected)
+//  Delete Car (Protected)
 app.delete("/api/cars/:id", verifyToken, async (req, res) => {
   try {
     const id = req.params.id;
@@ -161,7 +161,7 @@ app.delete("/api/cars/:id", verifyToken, async (req, res) => {
   }
 });
 
-// 📅 Book a Car (Protected)
+//  Book a Car (Protected)
 app.post("/api/bookings", verifyToken, async (req, res) => {
   try {
     const booking = req.body;
@@ -178,7 +178,7 @@ app.post("/api/bookings", verifyToken, async (req, res) => {
   }
 });
 
-// 📅 Get My Bookings (Protected)
+//  Get My Bookings (Protected)
 app.get("/api/bookings/my", verifyToken, async (req, res) => {
   try {
     const email = req.query.email;
@@ -195,7 +195,7 @@ app.get("/api/bookings/my", verifyToken, async (req, res) => {
   }
 });
 
-// ✅ Start Server
+//  Start Server
 app.listen(port, () => {
-  console.log(`🚀 SwiftCarz server running on port ${port}`);
+  console.log(`SwiftCarz server running on port ${port}`);
 });
