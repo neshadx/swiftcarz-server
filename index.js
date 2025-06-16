@@ -8,13 +8,13 @@ require("dotenv").config();
 const app = express();
 const port = process.env.PORT || 5000;
 
-// ✅ Allowed origins for CORS
+// ✅ Allowlist for CORS
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://swiftcarz-client.vercel.app"
+  "https://swiftcarz-client.vercel.app",
 ];
 
-// ✅ Middleware setup
+// ✅ Middleware
 app.use(cors({
   origin: allowedOrigins,
   credentials: true,
@@ -22,6 +22,7 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
+// ✅ MongoDB setup
 const uri = process.env.MONGODB_URI;
 let carCollection, bookingCollection;
 
@@ -39,15 +40,14 @@ async function run() {
     const db = client.db("swiftcarzDB");
     carCollection = db.collection("cars");
     bookingCollection = db.collection("bookings");
-    await client.db("admin").command({ ping: 1 });
     console.log("✅ MongoDB connected!");
   } catch (err) {
-    console.error("❌ MongoDB Error:", err.message);
+    console.error("❌ MongoDB connection error:", err.message);
   }
 }
 run().catch(console.dir);
 
-// ✅ JWT Middleware
+// ✅ JWT Verification Middleware
 function verifyToken(req, res, next) {
   const token = req.cookies?.token;
   if (!token) return res.status(401).send({ error: "Unauthorized access" });
@@ -59,12 +59,12 @@ function verifyToken(req, res, next) {
   });
 }
 
-// 🔹 Root
+// ✅ Health check
 app.get("/", (req, res) => {
   res.send("🚗 SwiftCarz backend is running!");
 });
 
-// 🔐 Login
+// 🔐 Login - set secure cookie
 app.post("/api/auth/login", (req, res) => {
   const user = req.body;
   if (!user?.email) return res.status(400).send({ error: "Invalid payload" });
@@ -81,24 +81,24 @@ app.post("/api/auth/login", (req, res) => {
     .send({ success: true });
 });
 
-// 🔓 Logout
+// 🔓 Logout - clear cookie
 app.post("/api/auth/logout", (req, res) => {
   res
     .clearCookie("token", {
+      httpOnly: true,
       secure: true,
       sameSite: "none",
-      httpOnly: true,
     })
     .send({ success: true });
 });
 
-// 🚗 Add New Car (Fixed with createdAt & bookingCount)
+// 🚗 Add New Car (Private)
 app.post("/api/cars", verifyToken, async (req, res) => {
   try {
     const car = {
       ...req.body,
-      createdAt: new Date(),      // ✅ Added timestamp
-      bookingCount: 0             // ✅ Default booking count
+      createdAt: new Date(),
+      bookingCount: 0,
     };
     const result = await carCollection.insertOne(car);
     res.status(201).send(result);
@@ -108,7 +108,7 @@ app.post("/api/cars", verifyToken, async (req, res) => {
   }
 });
 
-// 🚗 Get All Cars
+// 🚗 Get All Cars (Public)
 app.get("/api/cars", async (req, res) => {
   try {
     const cars = await carCollection.find().toArray();
@@ -130,7 +130,7 @@ app.get("/api/cars/:id", async (req, res) => {
   }
 });
 
-// 🚗 Update Car
+// 🚗 Update Car (Private)
 app.put("/api/cars/:id", verifyToken, async (req, res) => {
   try {
     const id = req.params.id;
@@ -145,7 +145,7 @@ app.put("/api/cars/:id", verifyToken, async (req, res) => {
   }
 });
 
-// 🚗 Delete Car
+// 🚗 Delete Car (Private)
 app.delete("/api/cars/:id", verifyToken, async (req, res) => {
   try {
     const id = req.params.id;
@@ -156,12 +156,13 @@ app.delete("/api/cars/:id", verifyToken, async (req, res) => {
   }
 });
 
-// 📅 Book a Car
+// 📅 Book Car (Private)
 app.post("/api/bookings", verifyToken, async (req, res) => {
   try {
     const booking = req.body;
     const result = await bookingCollection.insertOne(booking);
 
+    // Increment booking count
     await carCollection.updateOne(
       { _id: new ObjectId(booking.carId) },
       { $inc: { bookingCount: 1 } }
@@ -173,7 +174,7 @@ app.post("/api/bookings", verifyToken, async (req, res) => {
   }
 });
 
-// 📅 Get My Bookings
+// 📅 Get User's Bookings (Private)
 app.get("/api/bookings/my", verifyToken, async (req, res) => {
   try {
     const email = req.query.email;
@@ -188,7 +189,7 @@ app.get("/api/bookings/my", verifyToken, async (req, res) => {
   }
 });
 
-// 🟢 Start Server
+// 🚀 Start server
 app.listen(port, () => {
   console.log(`🚀 Server running on port ${port}`);
 });
