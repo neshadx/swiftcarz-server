@@ -195,7 +195,6 @@
 // });
 
 
-
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
@@ -383,19 +382,25 @@ app.get("/api/bookings/my", verifyToken, async (req, res) => {
 
 // ✅ Update Booking (PUT)
 app.put("/api/bookings/:id", verifyToken, async (req, res) => {
+  const bookingId = req.params.id;
+
+  if (!ObjectId.isValid(bookingId)) {
+    return res.status(400).send({ error: "Invalid booking ID format" });
+  }
+
   try {
     const updateData = req.body;
 
     const result = await bookingCollection.updateOne(
-      { _id: new ObjectId(req.params.id) },
+      { _id: new ObjectId(bookingId) },
       { $set: updateData }
     );
 
     if (result.modifiedCount === 0) {
-      return res.status(404).send({ error: "Booking not found or no change" });
+      return res.status(404).send({ error: "Booking not found or unchanged" });
     }
 
-    res.send({ success: true, modifiedCount: result.modifiedCount });
+    res.send({ success: true });
   } catch (err) {
     console.error("❌ Update Booking Error:", err.message);
     res.status(500).send({ error: "Failed to update booking" });
@@ -404,9 +409,15 @@ app.put("/api/bookings/:id", verifyToken, async (req, res) => {
 
 // ✅ Cancel Booking (DELETE)
 app.delete("/api/bookings/:id", verifyToken, async (req, res) => {
+  const bookingId = req.params.id;
+
+  if (!ObjectId.isValid(bookingId)) {
+    return res.status(400).send({ error: "Invalid booking ID format" });
+  }
+
   try {
     const result = await bookingCollection.deleteOne({
-      _id: new ObjectId(req.params.id),
+      _id: new ObjectId(bookingId),
     });
 
     if (result.deletedCount === 0) {
