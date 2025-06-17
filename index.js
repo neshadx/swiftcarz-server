@@ -431,25 +431,23 @@
 //   }
 // });
 
-// // ✅ Start server
+// //  Start server
 // app.listen(port, () => {
 //   console.log(`🚀 SwiftCarz server running on port ${port}`);
 // });
-
-
 
 
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const jwt = require("jsonwebtoken");
-const { MongoClient, ServerApiVersion } = require("mongodb"); // 👈 removed ObjectId
+const { MongoClient, ObjectId, ServerApiVersion } = require("mongodb");
 require("dotenv").config();
 
 const app = express();
 const port = process.env.PORT || 5000;
 
-// ✅ CORS setup
+//  CORS setup
 app.use(
   cors({
     origin: ["http://localhost:5173", "https://swiftcarz-client.vercel.app"],
@@ -460,10 +458,10 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
-// ✅ MongoDB setup
+//  MongoDB setup
 const uri = process.env.MONGODB_URI;
 if (!uri) {
-  console.error("❌ MONGODB_URI not set.");
+  console.error("MONGODB_URI not set.");
   process.exit(1);
 }
 
@@ -479,14 +477,14 @@ async function run() {
     const db = client.db("swiftcarzDB");
     carCollection = db.collection("cars");
     bookingCollection = db.collection("bookings");
-    console.log("✅ MongoDB connected!");
+    console.log("MongoDB connected!");
   } catch (err) {
-    console.error("❌ MongoDB connection failed:", err.message);
+    console.error("MongoDB connection failed:", err.message);
   }
 }
 run().catch(console.dir);
 
-// ✅ JWT Middleware
+//  JWT Middleware
 function verifyToken(req, res, next) {
   const token =
     req.cookies?.token || req.headers.authorization?.split(" ")[1];
@@ -500,12 +498,12 @@ function verifyToken(req, res, next) {
   });
 }
 
-// ✅ Health check
+//  Health check
 app.get("/", (req, res) => {
   res.send("🚗 SwiftCarz backend is running!");
 });
 
-// ✅ Login
+//  Login
 app.post("/api/auth/login", (req, res) => {
   const user = req.body;
   if (!user?.email) return res.status(400).send({ error: "Invalid payload" });
@@ -522,7 +520,7 @@ app.post("/api/auth/login", (req, res) => {
     .send({ success: true, token });
 });
 
-// ✅ Logout
+//  Logout
 app.post("/api/auth/logout", (req, res) => {
   res
     .clearCookie("token", {
@@ -533,7 +531,7 @@ app.post("/api/auth/logout", (req, res) => {
     .send({ success: true });
 });
 
-// ✅ Add Car
+//  Add Car
 app.post("/api/cars", verifyToken, async (req, res) => {
   try {
     const car = {
@@ -548,7 +546,7 @@ app.post("/api/cars", verifyToken, async (req, res) => {
   }
 });
 
-// ✅ Get All Cars
+//  Get All Cars
 app.get("/api/cars", async (req, res) => {
   try {
     const cars = await carCollection.find().toArray();
@@ -558,10 +556,10 @@ app.get("/api/cars", async (req, res) => {
   }
 });
 
-// ✅ Get Car by ID
+//  Get Car by ID
 app.get("/api/cars/:id", async (req, res) => {
   try {
-    const car = await carCollection.findOne({ _id: req.params.id });
+    const car = await carCollection.findOne({ _id: new ObjectId(req.params.id) });
     if (!car) return res.status(404).send({ error: "Car not found" });
     res.send(car);
   } catch (err) {
@@ -569,11 +567,11 @@ app.get("/api/cars/:id", async (req, res) => {
   }
 });
 
-// ✅ Update Car
+//  Update Car
 app.put("/api/cars/:id", verifyToken, async (req, res) => {
   try {
     const result = await carCollection.updateOne(
-      { _id: req.params.id },
+      { _id: new ObjectId(req.params.id) },
       { $set: req.body }
     );
     res.send(result);
@@ -582,27 +580,24 @@ app.put("/api/cars/:id", verifyToken, async (req, res) => {
   }
 });
 
-// ✅ Delete Car
+//  Delete Car
 app.delete("/api/cars/:id", verifyToken, async (req, res) => {
   try {
-    const result = await carCollection.deleteOne({ _id: req.params.id });
+    const result = await carCollection.deleteOne({ _id: new ObjectId(req.params.id) });
     res.send(result);
   } catch (err) {
     res.status(500).send({ error: "Failed to delete car" });
   }
 });
 
-// ✅ Book a Car
+//  Book a Car
 app.post("/api/bookings", verifyToken, async (req, res) => {
   try {
-    const booking = {
-      ...req.body,
-      _id: `${Date.now()}_${Math.random().toString(36).substr(2, 6)}`, // 👈 generate string _id
-    };
+    const booking = req.body;
     const result = await bookingCollection.insertOne(booking);
 
     await carCollection.updateOne(
-      { _id: booking.carId },
+      { _id: new ObjectId(booking.carId) },
       { $inc: { bookingCount: 1 } }
     );
 
@@ -612,7 +607,7 @@ app.post("/api/bookings", verifyToken, async (req, res) => {
   }
 });
 
-// ✅ Get My Bookings
+//  Get My Bookings
 app.get("/api/bookings/my", verifyToken, async (req, res) => {
   try {
     const email = req.query.email;
@@ -627,11 +622,17 @@ app.get("/api/bookings/my", verifyToken, async (req, res) => {
   }
 });
 
-// ✅ Update Booking
+//  Update Booking
 app.put("/api/bookings/:id", verifyToken, async (req, res) => {
+  const id = req.params.id;
+
+  if (!ObjectId.isValid(id)) {
+    return res.status(400).send({ error: "Invalid booking ID" });
+  }
+
   try {
     const result = await bookingCollection.updateOne(
-      { _id: req.params.id },
+      { _id: new ObjectId(id) },
       { $set: req.body }
     );
 
@@ -645,10 +646,16 @@ app.put("/api/bookings/:id", verifyToken, async (req, res) => {
   }
 });
 
-// ✅ Cancel Booking
+// Cancel Booking
 app.delete("/api/bookings/:id", verifyToken, async (req, res) => {
+  const id = req.params.id;
+
+  if (!ObjectId.isValid(id)) {
+    return res.status(400).send({ error: "Invalid booking ID" });
+  }
+
   try {
-    const result = await bookingCollection.deleteOne({ _id: req.params.id });
+    const result = await bookingCollection.deleteOne({ _id: new ObjectId(id) });
 
     if (result.deletedCount === 0) {
       return res.status(404).send({ error: "Booking not found" });
@@ -660,7 +667,7 @@ app.delete("/api/bookings/:id", verifyToken, async (req, res) => {
   }
 });
 
-// ✅ Start Server
+// Start server
 app.listen(port, () => {
-  console.log(`🚀 SwiftCarz server running on port ${port}`);
+  console.log(`SwiftCarz server running on port ${port}`);
 });
