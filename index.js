@@ -919,8 +919,6 @@
 // });
 
 
-
-
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
@@ -985,21 +983,21 @@ app.get("/", (req, res) => {
   res.send("🚗 SwiftCarz backend is running!");
 });
 
-// Login
+// ✅ FIXED: Login route (only email signed)
 app.post("/api/auth/login", (req, res) => {
-  const user = req.body;
-  if (!user?.email) return res.status(400).send({ error: "Invalid payload" });
+  const { email } = req.body;
+  if (!email) return res.status(400).send({ error: "Email is required" });
 
-  const token = jwt.sign(user, process.env.JWT_SECRET, { expiresIn: "2h" });
+  const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: "2h" });
 
   res
     .cookie("token", token, {
       httpOnly: true,
       secure: true,
-      sameSite: "none",
+      sameSite: "None",
       maxAge: 2 * 60 * 60 * 1000,
     })
-    .send({ success: true, token });
+    .send({ success: true });
 });
 
 // Logout
@@ -1008,7 +1006,7 @@ app.post("/api/auth/logout", (req, res) => {
     .clearCookie("token", {
       httpOnly: true,
       secure: false,
-      sameSite: "lax",
+      sameSite: "Lax",
     })
     .send({ success: true });
 });
@@ -1062,17 +1060,12 @@ app.put("/api/cars/:id", verifyToken, async (req, res) => {
   }
 });
 
-// Delete Car (with linked bookings)
+// Delete Car
 app.delete("/api/cars/:id", verifyToken, async (req, res) => {
   try {
     const carId = req.params.id;
-
-    // Delete all bookings of this car
     await bookingCollection.deleteMany({ carId });
-
-    // Then delete the car itself
     const result = await carCollection.deleteOne({ _id: new ObjectId(carId) });
-
     res.send(result);
   } catch (err) {
     res.status(500).send({ error: "Failed to delete car and bookings" });
@@ -1099,7 +1092,7 @@ app.post("/api/bookings", verifyToken, async (req, res) => {
   }
 });
 
-// Get My Bookings (with car info)
+// ✅ Get My Bookings (with car info)
 app.get("/api/bookings/my", verifyToken, async (req, res) => {
   try {
     const email = req.query.email;
@@ -1125,7 +1118,6 @@ app.get("/api/bookings/my", verifyToken, async (req, res) => {
 // Update Booking
 app.put("/api/bookings/:id", verifyToken, async (req, res) => {
   const id = req.params.id;
-
   if (!ObjectId.isValid(id)) {
     return res.status(400).send({ error: "Invalid booking ID" });
   }
@@ -1149,7 +1141,6 @@ app.put("/api/bookings/:id", verifyToken, async (req, res) => {
 // Cancel Booking
 app.delete("/api/bookings/:id", verifyToken, async (req, res) => {
   const id = req.params.id;
-
   if (!ObjectId.isValid(id)) {
     return res.status(400).send({ error: "Invalid booking ID" });
   }
