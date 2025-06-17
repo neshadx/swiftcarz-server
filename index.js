@@ -1,3 +1,4 @@
+
 // const express = require("express");
 // const cors = require("cors");
 // const cookieParser = require("cookie-parser");
@@ -8,7 +9,7 @@
 // const app = express();
 // const port = process.env.PORT || 5000;
 
-// // CORS for local dev + production
+// // ✅ CORS setup
 // app.use(
 //   cors({
 //     origin: ["http://localhost:5173", "https://swiftcarz-client.vercel.app"],
@@ -16,26 +17,20 @@
 //   })
 // );
 
-// //  Middlewares
 // app.use(express.json());
 // app.use(cookieParser());
 
-// //  MongoDB Setup
+// // ✅ MongoDB setup
 // const uri = process.env.MONGODB_URI;
-
 // if (!uri) {
-//   console.error(" MONGODB_URI not set in environment variables.");
+//   console.error("❌ MONGODB_URI not set.");
 //   process.exit(1);
 // }
 
 // let carCollection, bookingCollection;
 
 // const client = new MongoClient(uri, {
-//   serverApi: {
-//     version: ServerApiVersion.v1,
-//     strict: true,
-//     deprecationErrors: true,
-//   },
+//   serverApi: { version: ServerApiVersion.v1, strict: true, deprecationErrors: true },
 // });
 
 // async function run() {
@@ -44,31 +39,40 @@
 //     const db = client.db("swiftcarzDB");
 //     carCollection = db.collection("cars");
 //     bookingCollection = db.collection("bookings");
-//     console.log(" MongoDB connected!");
+//     console.log("✅ MongoDB connected!");
 //   } catch (err) {
 //     console.error("❌ MongoDB connection failed:", err.message);
 //   }
 // }
 // run().catch(console.dir);
 
-// // JWT Middleware
+// // ✅ JWT Middleware — supports cookie and header
 // function verifyToken(req, res, next) {
-//   const token = req.cookies?.token;
-//   if (!token) return res.status(401).send({ error: "Unauthorized access" });
+//   const token =
+//     req.cookies?.token ||
+//     req.headers.authorization?.split(" ")[1];
+
+//   if (!token) {
+//     console.log("🔴 No token found");
+//     return res.status(401).send({ error: "Unauthorized access" });
+//   }
 
 //   jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-//     if (err) return res.status(403).send({ error: "Forbidden" });
+//     if (err) {
+//       console.log("🔴 Token invalid");
+//       return res.status(403).send({ error: "Forbidden" });
+//     }
 //     req.user = decoded;
 //     next();
 //   });
 // }
 
-// //  Health Check
+// // ✅ Health check
 // app.get("/", (req, res) => {
 //   res.send("🚗 SwiftCarz backend is running!");
 // });
 
-// //  Login (sets cookie)
+// // ✅ Login route — sets cookie & sends token
 // app.post("/api/auth/login", (req, res) => {
 //   const user = req.body;
 //   if (!user?.email) return res.status(400).send({ error: "Invalid payload" });
@@ -78,14 +82,14 @@
 //   res
 //     .cookie("token", token, {
 //       httpOnly: true,
-//       secure: true,       //  for localhost
-//       sameSite: "none",     //  for localhost
+//       secure: true,
+//       sameSite: "none",
 //       maxAge: 2 * 60 * 60 * 1000,
 //     })
-//     .send({ success: true });
+//     .send({ success: true, token }); // ✅ token returned for frontend
 // });
 
-// //  Logout
+// // ✅ Logout
 // app.post("/api/auth/logout", (req, res) => {
 //   res
 //     .clearCookie("token", {
@@ -96,7 +100,7 @@
 //     .send({ success: true });
 // });
 
-// //  Add Car (Protected)
+// // ✅ Add Car (Protected)
 // app.post("/api/cars", verifyToken, async (req, res) => {
 //   try {
 //     const car = {
@@ -112,22 +116,20 @@
 //   }
 // });
 
-// //  Get All Cars
+// // ✅ Get All Cars (Public)
 // app.get("/api/cars", async (req, res) => {
 //   try {
 //     const cars = await carCollection.find().toArray();
 //     res.send(cars);
 //   } catch (err) {
-//     console.error("Get Cars Error:", err.message);
 //     res.status(500).send({ error: "Failed to fetch cars" });
 //   }
 // });
 
-// //  Get Car by ID
+// // ✅ Get Car by ID
 // app.get("/api/cars/:id", async (req, res) => {
 //   try {
-//     const id = req.params.id;
-//     const car = await carCollection.findOne({ _id: new ObjectId(id) });
+//     const car = await carCollection.findOne({ _id: new ObjectId(req.params.id) });
 //     if (!car) return res.status(404).send({ error: "Car not found" });
 //     res.send(car);
 //   } catch (err) {
@@ -135,14 +137,12 @@
 //   }
 // });
 
-// //  Update Car (Protected)
+// // ✅ Update Car
 // app.put("/api/cars/:id", verifyToken, async (req, res) => {
 //   try {
-//     const id = req.params.id;
-//     const updateData = req.body;
 //     const result = await carCollection.updateOne(
-//       { _id: new ObjectId(id) },
-//       { $set: updateData }
+//       { _id: new ObjectId(req.params.id) },
+//       { $set: req.body }
 //     );
 //     res.send(result);
 //   } catch (err) {
@@ -150,55 +150,52 @@
 //   }
 // });
 
-// //  Delete Car (Protected)
+// // ✅ Delete Car
 // app.delete("/api/cars/:id", verifyToken, async (req, res) => {
 //   try {
-//     const id = req.params.id;
-//     const result = await carCollection.deleteOne({ _id: new ObjectId(id) });
+//     const result = await carCollection.deleteOne({ _id: new ObjectId(req.params.id) });
 //     res.send(result);
 //   } catch (err) {
 //     res.status(500).send({ error: "Failed to delete car" });
 //   }
 // });
 
-// //  Book a Car (Protected)
+// // ✅ Book a Car
 // app.post("/api/bookings", verifyToken, async (req, res) => {
 //   try {
 //     const booking = req.body;
 //     const result = await bookingCollection.insertOne(booking);
-
 //     await carCollection.updateOne(
 //       { _id: new ObjectId(booking.carId) },
 //       { $inc: { bookingCount: 1 } }
 //     );
-
 //     res.status(201).send(result);
 //   } catch (err) {
 //     res.status(500).send({ error: "Failed to book car" });
 //   }
 // });
 
-// //  Get My Bookings (Protected)
+// // ✅ Get My Bookings
 // app.get("/api/bookings/my", verifyToken, async (req, res) => {
 //   try {
 //     const email = req.query.email;
 //     if (!email || req.user.email !== email) {
 //       return res.status(403).send({ error: "Forbidden" });
 //     }
-
-//     const bookings = await bookingCollection
-//       .find({ userEmail: email })
-//       .toArray();
+//     const bookings = await bookingCollection.find({ userEmail: email }).toArray();
 //     res.send(bookings);
 //   } catch (err) {
 //     res.status(500).send({ error: "Failed to fetch bookings" });
 //   }
 // });
 
-// //  Start Server
+// // ✅ Start server
 // app.listen(port, () => {
-//   console.log(`SwiftCarz server running on port ${port}`);
+//   console.log(`🚀 SwiftCarz server running on port ${port}`);
 // });
+
+
+
 
 
 
@@ -249,22 +246,15 @@ async function run() {
 }
 run().catch(console.dir);
 
-// ✅ JWT Middleware — supports cookie and header
+// ✅ JWT Middleware
 function verifyToken(req, res, next) {
   const token =
-    req.cookies?.token ||
-    req.headers.authorization?.split(" ")[1];
+    req.cookies?.token || req.headers.authorization?.split(" ")[1];
 
-  if (!token) {
-    console.log("🔴 No token found");
-    return res.status(401).send({ error: "Unauthorized access" });
-  }
+  if (!token) return res.status(401).send({ error: "Unauthorized access" });
 
   jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-    if (err) {
-      console.log("🔴 Token invalid");
-      return res.status(403).send({ error: "Forbidden" });
-    }
+    if (err) return res.status(403).send({ error: "Forbidden" });
     req.user = decoded;
     next();
   });
@@ -275,7 +265,7 @@ app.get("/", (req, res) => {
   res.send("🚗 SwiftCarz backend is running!");
 });
 
-// ✅ Login route — sets cookie & sends token
+// ✅ Login
 app.post("/api/auth/login", (req, res) => {
   const user = req.body;
   if (!user?.email) return res.status(400).send({ error: "Invalid payload" });
@@ -289,7 +279,7 @@ app.post("/api/auth/login", (req, res) => {
       sameSite: "none",
       maxAge: 2 * 60 * 60 * 1000,
     })
-    .send({ success: true, token }); // ✅ token returned for frontend
+    .send({ success: true, token });
 });
 
 // ✅ Logout
@@ -314,12 +304,11 @@ app.post("/api/cars", verifyToken, async (req, res) => {
     const result = await carCollection.insertOne(car);
     res.status(201).send(result);
   } catch (err) {
-    console.error("❌ Add Car Error:", err.message);
     res.status(500).send({ error: "Failed to add car" });
   }
 });
 
-// ✅ Get All Cars (Public)
+// ✅ Get All Cars
 app.get("/api/cars", async (req, res) => {
   try {
     const cars = await carCollection.find().toArray();
@@ -368,10 +357,12 @@ app.post("/api/bookings", verifyToken, async (req, res) => {
   try {
     const booking = req.body;
     const result = await bookingCollection.insertOne(booking);
+
     await carCollection.updateOne(
       { _id: new ObjectId(booking.carId) },
       { $inc: { bookingCount: 1 } }
     );
+
     res.status(201).send(result);
   } catch (err) {
     res.status(500).send({ error: "Failed to book car" });
@@ -385,6 +376,7 @@ app.get("/api/bookings/my", verifyToken, async (req, res) => {
     if (!email || req.user.email !== email) {
       return res.status(403).send({ error: "Forbidden" });
     }
+
     const bookings = await bookingCollection.find({ userEmail: email }).toArray();
     res.send(bookings);
   } catch (err) {
@@ -392,7 +384,26 @@ app.get("/api/bookings/my", verifyToken, async (req, res) => {
   }
 });
 
+// ✅ Cancel Booking (DELETE)
+app.delete("/api/bookings/:id", verifyToken, async (req, res) => {
+  try {
+    const result = await bookingCollection.deleteOne({
+      _id: new ObjectId(req.params.id),
+    });
+
+    if (result.deletedCount === 0) {
+      return res.status(404).send({ error: "Booking not found" });
+    }
+
+    res.send({ success: true });
+  } catch (err) {
+    console.error("❌ Cancel Booking Error:", err.message);
+    res.status(500).send({ error: "Failed to cancel booking" });
+  }
+});
+
 // ✅ Start server
 app.listen(port, () => {
   console.log(`🚀 SwiftCarz server running on port ${port}`);
 });
+
