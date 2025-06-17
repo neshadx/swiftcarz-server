@@ -196,9 +196,6 @@
 
 
 
-
-
-
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
@@ -384,6 +381,27 @@ app.get("/api/bookings/my", verifyToken, async (req, res) => {
   }
 });
 
+// ✅ Update Booking (PUT)
+app.put("/api/bookings/:id", verifyToken, async (req, res) => {
+  try {
+    const updateData = req.body;
+
+    const result = await bookingCollection.updateOne(
+      { _id: new ObjectId(req.params.id) },
+      { $set: updateData }
+    );
+
+    if (result.modifiedCount === 0) {
+      return res.status(404).send({ error: "Booking not found or no change" });
+    }
+
+    res.send({ success: true, modifiedCount: result.modifiedCount });
+  } catch (err) {
+    console.error("❌ Update Booking Error:", err.message);
+    res.status(500).send({ error: "Failed to update booking" });
+  }
+});
+
 // ✅ Cancel Booking (DELETE)
 app.delete("/api/bookings/:id", verifyToken, async (req, res) => {
   try {
@@ -406,4 +424,3 @@ app.delete("/api/bookings/:id", verifyToken, async (req, res) => {
 app.listen(port, () => {
   console.log(`🚀 SwiftCarz server running on port ${port}`);
 });
-
