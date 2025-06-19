@@ -975,9 +975,9 @@ async function run() {
     const db = client.db("swiftcarzDB");
     carCollection = db.collection("cars");
     bookingCollection = db.collection("bookings");
-    console.log("✅ MongoDB connected!");
+    console.log("MongoDB connected!");
   } catch (err) {
-    console.error("❌ MongoDB connection failed:", err.message);
+    console.error("MongoDB connection failed:", err.message);
   }
 }
 run().catch(console.dir);
@@ -999,7 +999,7 @@ app.get("/", (req, res) => {
   res.send("🚗 SwiftCarz backend is running!");
 });
 
-// ✅ FIXED: Login route (only email signed)
+// FIXED: Login route (only email signed)
 app.post("/api/auth/login", (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).send({ error: "Email is required" });
@@ -1108,7 +1108,7 @@ app.post("/api/bookings", verifyToken, async (req, res) => {
   }
 });
 
-// ✅ Get My Bookings (with car info)
+//  Get My Bookings (with car info)
 app.get("/api/bookings/my", verifyToken, async (req, res) => {
   try {
     const email = req.query.email;
