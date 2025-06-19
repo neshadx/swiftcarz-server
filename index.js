@@ -930,12 +930,28 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 // CORS setup
-app.use(
-  cors({
-    origin: ["http://localhost:5173", "https://zesty-melomakarona-8c8976.netlify.app"],
-    credentials: true,
-  })
-);
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://zesty-melomakarona-8c8976.netlify.app'
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
+
+// app.use(
+//   cors({
+//     origin: ["http://localhost:5173", "https://zesty-melomakarona-8c8976.netlify.app"],
+//     credentials: true,
+//   })
+// );
 
 app.use(express.json());
 app.use(cookieParser());
