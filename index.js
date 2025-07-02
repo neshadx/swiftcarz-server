@@ -948,7 +948,7 @@ const port = process.env.PORT || 5000;
 
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://musical-gecko-f6cbb2.netlify.app", "https://zesty-melomakarona-8c8976.netlify.app"],
+    origin: ["http://localhost:5173", "https://musical-gecko-f6cbb2.netlify.app", "https://swift-carz.netlify.app", "https://zesty-melomakarona-8c8976.netlify.app"],
     credentials: true,
   })
 );
